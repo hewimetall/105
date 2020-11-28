@@ -11,11 +11,6 @@ import nltk
 # for convert audio file
 import pydub, wave
 
-
-def get_fields_class(type_of, id, file_path, dict=None):
-    return BaseDataAnaliz(type_of, id, file_path, dict)
-
-
 class Base():
     """
     provide base function :
@@ -67,10 +62,10 @@ class BaseDataAnaliz(Base):
     def __loads(self):
         ## load base model
         if not os.path.exists("model"):
-            return
+            raise ValueError
         self.corrector = jamspell.TSpellCorrector()
-        self.corrector.LoadLangModel('ru_small.bin')
-
+        if not self.corrector.LoadLangModel('ru_small.bin'):
+            raise ValueError
         # Обученная модель для русского языка
         self.model = Model("model")
         self.morph = pymorphy2.MorphAnalyzer()
@@ -146,6 +141,7 @@ class BaseDataAnaliz(Base):
             path_to_wav = file_path
         data_cor =  self._corrector_data(path_to_wav)
         self.data_cor = data_cor
+        self.dict_f = dict
 
 
 class CheckBox(BaseDataAnaliz):
@@ -155,14 +151,14 @@ class CheckBox(BaseDataAnaliz):
         nltk.download('stopwords')
         return super(CheckBox, self).__loads()
 
-    def get_data(self,mix_data_json):
+    def get_data(self):
         # mix_data_json = [
         #     "магнит",
         #     "максим",
         #     "сок"
         # ]
         morph = pymorphy2.MorphAnalyzer()
-        data_norm = " ".join([" ".join([i.normal_form for i in morph.parse(word)]) for word in mix_data_json]).split(
+        data_norm = " ".join([" ".join([i.normal_form for i in morph.parse(word)]) for word in self.dict_f]).split(
             " ")
 
         # HAVE FILE DIR AND FILE TYPE WAV
