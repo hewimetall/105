@@ -162,7 +162,7 @@ class CheckBox(BaseDataAnaliz):
             " ")
 
         # HAVE FILE DIR AND FILE TYPE WAV
-        clr_data = self.data_cor & set(mix_data_json) & set(data_norm)
+        clr_data = self.data_cor & set(self.data_cor) & set(data_norm)
         return clr_data
 
 class TextBox(BaseDataAnaliz):
@@ -170,12 +170,12 @@ class TextBox(BaseDataAnaliz):
         data = " ".join(self.raw_data)
         return data
 
-path = "session_temp/1/mp3/1_1.mp3"
-mix_data_json = [
-    "магнит",
-    "максим",
-    "сок"
-]
+# path = "session_temp/1/mp3/1_1.mp3"
+# mix_data_json = [
+#     "магнит",
+#     "максим",
+#     "сок"
+# ]
 
 # test1 = CheckBox(12, path,dict = mix_data_json)
 # data  = test1.get_data(mix_data_json)

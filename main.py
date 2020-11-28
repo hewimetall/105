@@ -9,7 +9,7 @@ from pre_build.class_f import TextBox, CheckBox
 class Item(BaseModel):
     type: str
     id:str
-    dict_data: Optional[str] = None
+    dict_data: Optional[list] = None
     file:str
 
 
@@ -19,7 +19,8 @@ def get_data(item: Item):
 
     if item.type == "checkbox":
         box = CheckBox(item.id, item.file, item.dict_data)
-        data = box.get_data(item.dict_data)
+        print(item.dict_data)
+        data = box.get_data()
     else:
         box =  TextBox(item.id, item.file)
         data = box.get_data()
@@ -32,8 +33,6 @@ def get_data(item: Item):
 
 @app.post("/put_items/")
 async def create_item(item: Item, background_tasks: BackgroundTasks):
-    print(item.id, item.file, item.dict_data)
-
     # background_tasks.add_task(get_data,item)
     data = get_data(item)
     re ={}
