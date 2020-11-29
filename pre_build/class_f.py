@@ -3,7 +3,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import os
 from vosk import Model, KaldiRecognizer
-# Система параметризации структуры данных, написанная для встраивания контекста в объекты JSON
 import json
 import pymorphy2
 import nltk
@@ -28,10 +27,9 @@ class Base():
         :param path_in, path_to,, mp3:
         :return wav_path:
         """
-        str_mp3 = file_path
         file_path = os.path.dirname(file_path)
         str_wav = os.path.join(file_path, "{}.wav".format(id))
-        sound = pydub.AudioSegment.from_mp3(str_mp3)
+        sound = pydub.AudioSegment.from_mp3(file_path)
         wav = sound.export(str_wav, format="wav")
 
         # открывает файл в формате wav
@@ -161,7 +159,6 @@ class CheckBox(BaseDataAnaliz):
         data_norm = " ".join([" ".join([i.normal_form for i in morph.parse(word)]) for word in self.dict_f]).split(
             " ")
 
-        # HAVE FILE DIR AND FILE TYPE WAV
         clr_data = self.data_cor & set(self.data_cor) & set(data_norm)
         return clr_data
 
