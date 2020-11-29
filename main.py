@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
+
 import os
 # import json
 
@@ -34,7 +35,7 @@ def get_data(item: Item):
 @app.post("/put_items/")
 async def create_item(item: Item, background_tasks: BackgroundTasks):
     # background_tasks.add_task(get_data,item)
-    item.file = os.path.join("data_drive",item.file)
+    item.file = os.path.join(os.getcwd(),"data_drive",item.file)
     data = get_data(item)
     re ={}
     re['id'] = "item.id"

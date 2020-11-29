@@ -27,8 +27,8 @@ class Base():
         :param path_in, path_to,, mp3:
         :return wav_path:
         """
-        file_path = os.path.dirname(file_path)
-        str_wav = os.path.join(file_path, "{}.wav".format(id))
+        file_dir = os.path.dirname(file_path)
+        str_wav = os.path.join(file_dir, "{}.wav".format(id))
         sound = pydub.AudioSegment.from_mp3(file_path)
         wav = sound.export(str_wav, format="wav")
 
@@ -50,7 +50,6 @@ class Base():
 
     def __del__(self):
         os.remove(self.str_path_wav)
-
 class BaseDataAnaliz(Base):
     type_of = None
     model = None
