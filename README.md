@@ -10,12 +10,13 @@
 Для локального запуска нужны внешние модели, которые не хранятся в репозитории:
 
 1. Vosk: <https://alphacephei.com/vosk/models/vosk-model-ru-0.10.zip>
-2. JamSpell: <https://github.com/bakwc/JamSpell-models/raw/master/ru.tar.gz>
+2. JamSpell (optional): <https://github.com/bakwc/JamSpell-models/raw/master/ru.tar.gz>
 
 После распаковки в корне проекта должны появиться:
 
 - `model/` - каталог модели Vosk;
-- `ru_small.bin` - языковая модель JamSpell.
+- `ru_small.bin` - языковая модель JamSpell, если пакет `jamspell`
+  установлен отдельно.
 
 ## Требования
 
@@ -23,6 +24,11 @@
 - `ffmpeg` для конвертации MP3 через `pydub`;
 - системные инструменты сборки, если платформа не предоставляет готовые колеса
   для аудио/NLP-зависимостей.
+
+Пакет `jamspell==0.0.12` не входит в стандартный `req_dev.txt`, потому что
+официальный sdist не собирается на Python 3.12. Если в окружении уже доступен
+совместимый JamSpell, сервис загрузит `ru_small.bin` и использует его; иначе
+нормализация продолжит работу без контекстного исправления опечаток.
 
 ## Установка
 
