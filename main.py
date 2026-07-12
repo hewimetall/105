@@ -38,6 +38,6 @@ async def create_item(item: Item, background_tasks: BackgroundTasks):
     item.file = os.path.join(os.getcwd(),"data_drive",item.file)
     data = get_data(item)
     re ={}
-    re['id'] = "item.id"
+    re['id'] = item.id
     re['data'] = data
     return re

@@ -1,14 +1,35 @@
-import jamspell
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import os
 from vosk import Model, KaldiRecognizer
 import json
-import pymorphy2
+import pymorphy3
 import nltk
 
 # for convert audio file
 import pydub, wave
+
+
+class IdentityCorrector:
+    """Fallback corrector used when the unmaintained JamSpell package is absent."""
+
+    def GetCandidates(self, tokens, index):
+        if not tokens:
+            return []
+        return [tokens[index]]
+
+
+def load_corrector(model_path="ru_small.bin"):
+    try:
+        import jamspell
+    except ImportError:
+        return IdentityCorrector()
+
+    corrector = jamspell.TSpellCorrector()
+    if not corrector.LoadLangModel(model_path):
+        raise ValueError("JamSpell language model is not available")
+    return corrector
+
 
 class Base():
     """
@@ -19,7 +40,7 @@ class Base():
     """
     str_path_wav = None
 
-    def __loads(self):
+    def _loads(self):
         pass
 
     def _convert_file(self, file_path: str, id: str):
@@ -49,23 +70,22 @@ class Base():
         return str_wav
 
     def __del__(self):
-        os.remove(self.str_path_wav)
+        if self.str_path_wav and os.path.exists(self.str_path_wav):
+            os.remove(self.str_path_wav)
 class BaseDataAnaliz(Base):
     type_of = None
     model = None
     corrector = None
     raw_data = None
 
-    def __loads(self):
+    def _loads(self):
         ## load base model
         if not os.path.exists("model"):
             raise ValueError
-        self.corrector = jamspell.TSpellCorrector()
-        if not self.corrector.LoadLangModel('ru_small.bin'):
-            raise ValueError
+        self.corrector = load_corrector()
         # Обученная модель для русского языка
         self.model = Model("model")
-        self.morph = pymorphy2.MorphAnalyzer()
+        self.morph = pymorphy3.MorphAnalyzer()
 
     def _get_data_in_audio(self,audio_wav_path: str):
         """
@@ -75,27 +95,29 @@ class BaseDataAnaliz(Base):
         """
 
         wf = wave.open(audio_wav_path, "rb")
-        if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getcomptype() != "NONE":
-            # check file not bead
-            return
-        # список для объединения результатов
-        result = list()
-        # wf.getframerate()->Возвращает частоту дискретизации.
-        rec = KaldiRecognizer(self.model, wf.getframerate())
-        while True:
-            data = wf.readframes(1000)
-            if len(data) == 0:
-                break
-            if rec.AcceptWaveform(data):
-                # get result in JSON
-                data = rec.Result()
-                jsonData = json.loads(data)
-                result.append(jsonData['text'])
-        jsonData = json.loads(rec.FinalResult())
-        # data is void
-        if 'result' in jsonData:
-            result.append(jsonData.get('text'))
-        wf.close()
+        try:
+            if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getcomptype() != "NONE":
+                # check file not bead
+                return []
+            # список для объединения результатов
+            result = list()
+            # wf.getframerate()->Возвращает частоту дискретизации.
+            rec = KaldiRecognizer(self.model, wf.getframerate())
+            while True:
+                data = wf.readframes(1000)
+                if len(data) == 0:
+                    break
+                if rec.AcceptWaveform(data):
+                    # get result in JSON
+                    data = rec.Result()
+                    jsonData = json.loads(data)
+                    result.append(jsonData['text'])
+            jsonData = json.loads(rec.FinalResult())
+            # data is void
+            if 'result' in jsonData:
+                result.append(jsonData.get('text'))
+        finally:
+            wf.close()
         self.raw_data = result
         return result
 
@@ -114,7 +136,7 @@ class BaseDataAnaliz(Base):
         res = self._get_data_in_audio(audio_wav_path)
         stop_words = stopwords.words("russian")
         mega_set = set()
-        for l in res:
+        for l in res or []:
             for token in word_tokenize(l, language="russian"):
                 if token in stop_words:
                     continue
@@ -127,26 +149,29 @@ class BaseDataAnaliz(Base):
 
     def __init__(self, id, file_path, dict=None):
         ## procces work file
-        file_type = file_path.split(".")[1]
+        self.data_cor = set()
+        self.raw_data = []
+        self.dict_f = dict or []
+        file_type = os.path.splitext(file_path)[1].lower().lstrip(".")
         if not os.path.isfile(file_path):
             return
         else:
-            self.__loads()
+            self._loads()
         if file_type == "mp3":
             path_to_wav = self._convert_file(file_path,id=id)
         else:
             path_to_wav = file_path
         data_cor =  self._corrector_data(path_to_wav)
         self.data_cor = data_cor
-        self.dict_f = dict
+        self.dict_f = dict or []
 
 
 class CheckBox(BaseDataAnaliz):
 
-    def __loads(self):
+    def _loads(self):
         nltk.download('punkt')
         nltk.download('stopwords')
-        return super(CheckBox, self).__loads()
+        return super()._loads()
 
     def get_data(self):
         # mix_data_json = [
@@ -154,7 +179,7 @@ class CheckBox(BaseDataAnaliz):
         #     "максим",
         #     "сок"
         # ]
-        morph = pymorphy2.MorphAnalyzer()
+        morph = pymorphy3.MorphAnalyzer()
         data_norm = " ".join([" ".join([i.normal_form for i in morph.parse(word)]) for word in self.dict_f]).split(
             " ")
 

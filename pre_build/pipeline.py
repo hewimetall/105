@@ -3,7 +3,7 @@ from shutil import copyfile
 from vosk import Model, KaldiRecognizer
 # Система параметризации структуры данных, написанная для встраивания контекста в объекты JSON
 import json
-import pymorphy2
+import pymorphy3
 
 # for convert audio file
 import pydub, wave
@@ -133,9 +133,28 @@ def get_data_in_audio(audio_wav_path: str):
     return result
 
 
+class IdentityCorrector:
+    def GetCandidates(self, tokens, index):
+        if not tokens:
+            return []
+        return [tokens[index]]
+
+
+def load_corrector(model_path="ru_small.bin"):
+    try:
+        import jamspell
+    except ImportError:
+        return IdentityCorrector()
+
+    corrector = jamspell.TSpellCorrector()
+    if not corrector.LoadLangModel(model_path):
+        raise ValueError("JamSpell language model is not available")
+    return corrector
+
+
 def norm_dict(corrector,token):
     data = [ ]
-    morph = pymorphy2.MorphAnalyzer()
+    morph = pymorphy3.MorphAnalyzer()
     for word in corrector.GetCandidates([token,], 0):
         # test data
         data_norm= [ i.normal_form for i in morph.parse(word) if i.score >0.25 ]
@@ -146,19 +165,17 @@ def norm_dict(corrector,token):
 
 def corrector_data(audio_wav_path: str):
     # THIS RECOGNATIONS SPITH TO TEXT
-    res = get_data_in_audio(audio_wav)
-    import jamspell
+    res = get_data_in_audio(audio_wav_path)
     from nltk.tokenize import RegexpTokenizer
     from nltk.corpus import stopwords
     from nltk.tokenize import sent_tokenize, word_tokenize
-    corrector = jamspell.TSpellCorrector()
-    corrector.LoadLangModel('ru_small.bin')
+    corrector = load_corrector()
     # data = [[[i.normal_form for i in morph.parse(j) if i.score == 1 or i.score == 0.5] for j in
     #          corrector.GetCandidates([i, ], 0)] for i in raw]
     # tokenizer = RegexpTokenizer(r'\w+')
     stop_words = stopwords.words("russian")
     mega_set = set()
-    for l in res:
+    for l in res or []:
         for token in word_tokenize(l, language="russian"):
             if token in stop_words:
                 continue
@@ -221,7 +238,7 @@ if __name__ == '__main__':
         "максим",
         "сок"
     ]
-    morph = pymorphy2.MorphAnalyzer()
+    morph = pymorphy3.MorphAnalyzer()
     data_norm = " ".join([" ".join([i.normal_form for i in morph.parse(word) ]) for word in mix_data_json ]).split(" ")
     nltk.download('punkt')
     nltk.download('stopwords')
