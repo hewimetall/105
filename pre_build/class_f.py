@@ -40,7 +40,7 @@ class Base():
     """
     str_path_wav = None
 
-    def __loads(self):
+    def _loads(self):
         pass
 
     def _convert_file(self, file_path: str, id: str):
@@ -78,7 +78,7 @@ class BaseDataAnaliz(Base):
     corrector = None
     raw_data = None
 
-    def __loads(self):
+    def _loads(self):
         ## load base model
         if not os.path.exists("model"):
             raise ValueError
@@ -156,7 +156,7 @@ class BaseDataAnaliz(Base):
         if not os.path.isfile(file_path):
             return
         else:
-            self.__loads()
+            self._loads()
         if file_type == "mp3":
             path_to_wav = self._convert_file(file_path,id=id)
         else:
@@ -168,10 +168,10 @@ class BaseDataAnaliz(Base):
 
 class CheckBox(BaseDataAnaliz):
 
-    def __loads(self):
+    def _loads(self):
         nltk.download('punkt')
         nltk.download('stopwords')
-        return super(CheckBox, self).__loads()
+        return super()._loads()
 
     def get_data(self):
         # mix_data_json = [
