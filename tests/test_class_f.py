@@ -208,10 +208,19 @@ def test_corrector_data_filters_stopwords_and_unions_norms(monkeypatch):
     analyzer = object.__new__(class_f.BaseDataAnaliz)
     analyzer._get_data_in_audio = lambda _path: ["и магнит сок"]
     analyzer._norm_dict = lambda token: {f"{token}-norm"}
-    monkeypatch.setattr(class_f.stopwords, "words", lambda language: ["и"])
+    monkeypatch.setattr(class_f, "stopwords", SimpleNamespace(words=lambda language: ["и"]))
     monkeypatch.setattr(class_f, "word_tokenize", lambda text, language: text.split())
 
     assert analyzer._corrector_data("audio.wav") == {"магнит-norm", "сок-norm"}
+
+
+def test_base_loads_noop_and_base_data_get_data():
+    base = class_f.Base()
+    analyzer = object.__new__(class_f.BaseDataAnaliz)
+    analyzer.data_cor = {"value"}
+
+    assert base._loads() is None
+    assert analyzer.get_data() == {"value"}
 
 
 def test_base_data_init_handles_missing_file(monkeypatch):

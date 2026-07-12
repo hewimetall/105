@@ -138,6 +138,12 @@ def test_pipeline_identity_corrector_and_loader(monkeypatch):
     sys.modules.pop("jamspell", None)
     assert isinstance(pipeline.load_corrector(), pipeline.IdentityCorrector)
 
+    successful_module = SimpleNamespace(
+        TSpellCorrector=lambda: SimpleNamespace(LoadLangModel=lambda _path: True)
+    )
+    monkeypatch.setitem(sys.modules, "jamspell", successful_module)
+    assert pipeline.load_corrector("model.bin").LoadLangModel("model.bin") is True
+
     fake_module = SimpleNamespace(
         TSpellCorrector=lambda: SimpleNamespace(LoadLangModel=lambda _path: False)
     )
@@ -170,8 +176,20 @@ def test_corrector_data_uses_argument_and_filters_stopwords(monkeypatch):
 
     monkeypatch.setattr(pipeline, "get_data_in_audio", fake_get_data)
     monkeypatch.setattr(pipeline, "load_corrector", lambda: "corrector")
-    monkeypatch.setattr(pipeline.stopwords, "words", lambda language: ["и"])
-    monkeypatch.setattr(pipeline, "word_tokenize", lambda text, language: text.split())
+    monkeypatch.setitem(
+        sys.modules,
+        "nltk.corpus",
+        SimpleNamespace(stopwords=SimpleNamespace(words=lambda language: ["и"])),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "nltk.tokenize",
+        SimpleNamespace(
+            RegexpTokenizer=object,
+            sent_tokenize=lambda text, language=None: [text],
+            word_tokenize=lambda text, language=None: text.split(),
+        ),
+    )
     monkeypatch.setattr(pipeline, "norm_dict", lambda corrector, token: {f"{corrector}:{token}"})
 
     assert pipeline.corrector_data("expected.wav") == {"corrector:магнит", "corrector:сок"}
